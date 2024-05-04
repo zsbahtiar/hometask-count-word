@@ -1,4 +1,6 @@
 
+import xml.etree.ElementTree as ET 
+import re
 
 # filename: string
 # return string
@@ -8,45 +10,20 @@ def read_file(filename):
             return file.read()
     except FileNotFoundError:
         return None
-    
-# like get words between brackets
-# example: <DOC>HI</DOC> -> HI
-# return the number of words and a dictionary with the words and their frequency
-def get_words_between_tags(text):
-    start = text.find("<")
-    while start != -1:
-        end = text.find(">", start)
-        text = text[:start] + " " + text[end + 1:]
-        start = text.find("<")
-    cleaned_text = ''.join(char.lower() if char.isalnum() or char.isspace() else ' ' for char in text)
-    words = cleaned_text.split()
-    word_dict = {}
-    word_count = 0
-    for word in words:
-        if word in word_dict:
-            word_dict[word] += 1
-        else:
-            word_dict[word] = 1
-        word_count += 1
-    return word_count, word_dict
 
-# print the dictionary descending by frequency, top 10
-# print the total number of words
-# print the total number of unique words
-# print the number of words with frequency less than 3
-# print the number of words that contain the word "tani"
-def print_words(words, total_words):
-    # print the dictionary descending by frequency, top 10
-    words = {k: v for k, v in sorted(words.items(), key=lambda item: item[1], reverse=True)}
+def print_stats(total_article,total_word, word_dict):
+    words = {k: v for k, v in sorted(word_dict.items(), key=lambda item: item[1], reverse=True)}
     top_10 = list(words.items())[:10]
     freq_lt_3 = {k: v for k, v in words.items() if v < 3}
    
+    print(f"\nJUMLAH BERITA DALAM KORPUS\n{total_article}\n")
+
     print("\nDAFTAR 10 KATA UNIK DENGAN FREKUENSI PALING TINGGI URUT BERDASARKAN FREKUENSI TINGGI")
     for i, (word, freq) in enumerate(top_10):
        print(f"{i+1}. {word} - {freq}")
         
         
-    print(f"\nJUMLAH SELURUH KATA\n{total_words}\n")
+    print(f"\nJUMLAH SELURUH KATA\n{total_word}\n")
 
     print(f"\nBANYAKNYA KATA UNIK DALAM DOKUMEN\n{len(words)}\n")
 
@@ -56,6 +33,27 @@ def print_words(words, total_words):
     print(words.get("tani", 0))
 
     
+def get_stats_word(text):
+    tree = ET.fromstring(f"<DOCS>{text}</DOCS>")
+    total_article = len(tree.findall("DOC"))
+    total_word = 0
+    word_dict = {}
+    for _ in tree.findall("DOC"):
+        for __ in _.findall("TEXT"):
+            text = __.text
+            cleaned_text = ''.join(char.lower() if char.isalnum() or char.isspace() else ' ' for char in text)
+            words = cleaned_text.split()
+            for word in words:
+                if len(word) < 3:
+                    continue
+
+                if word in word_dict:
+                    word_dict[word] += 1
+                else:
+                    word_dict[word] = 1
+                total_word += 1
+   
+    return total_article,total_word, word_dict
 
 def main():
     file = "korpus.txt"
@@ -64,9 +62,14 @@ def main():
         print(f"File {file} not found")
         return
     
-    word_count, word_dict = get_words_between_tags(text)
-    print_words(word_dict, word_count)
+    total_article,total_word, word_dict = get_stats_word(text)
+    print_stats( total_article,total_word, word_dict)
 
 
 if __name__ == "__main__":
     main()
+
+
+
+
+   
